@@ -58,3 +58,36 @@ export function calcOrderTotal(
   const afterDiscount = round2(subtotal * (1 - rate));
   return round2(afterDiscount + calcShipping(afterDiscount));
 }
+
+export type Region = 'local' | 'west' | 'center' | 'east';
+
+export const DELIVERY_DAYS: Record<
+  Region,
+  { standard: number; express: number }
+> = {
+  local: { standard: 1, express: 1 }, // Закарпатська область
+  west: { standard: 2, express: 1 }, // західні області
+  center: { standard: 3, express: 2 }, // центральні області та Київ
+  east: { standard: 5, express: 3 }, // східні та південні області
+};
+
+export const CUTOFF_HOUR = 14;
+
+export function estimateDelivery(
+  region: Region,
+  isExpress: boolean,
+  orderHour = 12,
+): number {
+  if (!Object.hasOwn(DELIVERY_DAYS, region)) {
+    throw new Error('UNKNOWN_REGION');
+  }
+  if (typeof isExpress !== 'boolean') {
+    throw new Error('INVALID_EXPRESS_FLAG');
+  }
+  if (!Number.isInteger(orderHour) || orderHour < 0 || orderHour > 23) {
+    throw new Error('INVALID_ORDER_HOUR');
+  }
+  const plan = DELIVERY_DAYS[region];
+  const days = isExpress ? plan.express : plan.standard;
+  return orderHour >= CUTOFF_HOUR ? days + 1 : days;
+}
